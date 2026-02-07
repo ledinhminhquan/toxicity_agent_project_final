@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -8,6 +9,8 @@ from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 from transformers import AutoTokenizer
 
 from .preprocessing import normalize_text, to_label_vector
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -20,7 +23,7 @@ class LoadedData:
 
 
 def _has_labels(example: Dict[str, Any], label_fields: Sequence[str]) -> bool:
-    # Drop rows with -1 labels (Kaggle test_labels convention) or missing labels.
+    """Drop rows with -1 labels (Kaggle test_labels convention) or missing labels."""
     for lf in label_fields:
         v = example.get(lf, None)
         if v is None:
@@ -31,6 +34,33 @@ def _has_labels(example: Dict[str, Any], label_fields: Sequence[str]) -> bool:
         except Exception:
             return False
     return True
+
+
+def _split_has_label_columns(split: Dataset, label_fields: Sequence[str]) -> bool:
+    """Check whether a dataset split actually contains the required label columns."""
+    cols = set(split.column_names)
+    return all(lf in cols for lf in label_fields)
+
+
+def _safe_load_dataset(ds_name: str) -> DatasetDict:
+    """Load dataset, handling cases where splits have incompatible schemas.
+
+    Many HuggingFace datasets that mirror Kaggle competitions have a test split
+    whose columns differ from the train split (e.g., test.csv has no label columns).
+    The ``datasets`` library raises a ``CastError`` when it tries to unify the
+    Arrow schemas.  When that happens we fall back to loading only the train split
+    and create our own val/test splits later.
+    """
+    try:
+        return load_dataset(ds_name)
+    except Exception as exc:
+        logger.warning(
+            "load_dataset('%s') failed (%s). "
+            "Falling back to loading only the train split.",
+            ds_name,
+            exc.__class__.__name__,
+        )
+        return DatasetDict({"train": load_dataset(ds_name, split="train")})
 
 
 def _prepare_split(split: Dataset, text_field: str, label_fields: Sequence[str], id_field: Optional[str]) -> Dataset:
@@ -78,18 +108,26 @@ def load_and_prepare_dataset(cfg: Dict[str, Any]) -> LoadedData:
     neg_ratio = float(cfg["dataset"].get("negative_downsample_ratio", 1.0))
     seed = int(cfg.get("project", {}).get("seed", 42))
 
-    raw: DatasetDict = load_dataset(ds_name)
+    raw = _safe_load_dataset(ds_name)
 
-    # Determine splits
+    # Determine which splits are usable (have label columns)
     if "train" in raw:
         train_raw = raw["train"]
     else:
-        # take the first available split
         first_key = list(raw.keys())[0]
         train_raw = raw[first_key]
 
+    # Only use val/test splits if they actually contain label columns.
+    # Kaggle-mirror datasets often have a test split with NO labels.
     val_raw = raw.get("validation")
     test_raw = raw.get("test")
+
+    if val_raw is not None and not _split_has_label_columns(val_raw, label_fields):
+        logger.info("Validation split exists but has no label columns; ignoring it.")
+        val_raw = None
+    if test_raw is not None and not _split_has_label_columns(test_raw, label_fields):
+        logger.info("Test split exists but has no label columns; ignoring it.")
+        test_raw = None
 
     # Prepare train split
     train = _prepare_split(train_raw, text_field=text_field, label_fields=label_fields, id_field=id_field)
@@ -98,9 +136,15 @@ def load_and_prepare_dataset(cfg: Dict[str, Any]) -> LoadedData:
     if val_raw is not None and test_raw is not None:
         val = _prepare_split(val_raw, text_field=text_field, label_fields=label_fields, id_field=id_field)
         test = _prepare_split(test_raw, text_field=text_field, label_fields=label_fields, id_field=id_field)
-        ds = DatasetDict(train=train, validation=val, test=test)
-    else:
-        # Create splits from train
+        # Only use external splits if they have enough labeled rows after filtering
+        if len(val) > 0 and len(test) > 0:
+            ds = DatasetDict(train=train, validation=val, test=test)
+        else:
+            logger.info("External val/test splits empty after label filtering; creating splits from train.")
+            val_raw = None  # fall through to split creation below
+
+    if val_raw is None or test_raw is None:
+        # Create splits from the labeled train data
         split_cfg = cfg.get("split", {})
         train_ratio = float(split_cfg.get("train_ratio", 0.9))
         val_ratio = float(split_cfg.get("val_ratio", 0.05))
