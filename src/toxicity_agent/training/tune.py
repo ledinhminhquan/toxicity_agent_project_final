@@ -135,20 +135,19 @@ def run_tune(config_path: str) -> Dict[str, Any]:
             report_to=[],
         )
 
+        # Note: EarlyStoppingCallback is NOT used during tuning because:
+        # - Tuning trials are already short (1-2 epochs each)
+        # - EarlyStoppingCallback requires load_best_model_at_end + save_strategy != "no"
+        #   which conflicts with our lightweight tuning setup.
         trainer = WeightedMultilabelTrainer(
             pos_weight=pos_weight,
             model=model,
             args=args,
             train_dataset=ds_train,
             eval_dataset=ds_val,
-            tokenizer=tokenizer,
+            processing_class=tokenizer,
             data_collator=data_collator,
             compute_metrics=compute_metrics,
-            callbacks=[
-                EarlyStoppingCallback(early_stopping_patience=int(cfg["training"].get("early_stopping_patience", 3)))
-            ]
-            if bool(cfg["training"].get("early_stopping", True))
-            else None,
         )
 
         trainer.train()

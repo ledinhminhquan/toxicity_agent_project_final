@@ -195,7 +195,7 @@ def run_train(config_path: str) -> Tuple[Path, Dict[str, Any]]:
         args=args,
         train_dataset=ds_train,
         eval_dataset=ds_val,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
         callbacks=callbacks,
