@@ -130,7 +130,7 @@ def run_tune(config_path: str) -> Dict[str, Any]:
             bf16=bf16,
             gradient_accumulation_steps=int(cfg["training"].get("gradient_accumulation_steps", 1)),
             logging_steps=int(cfg["training"].get("logging_steps", 50)),
-            evaluation_strategy="epoch",
+            eval_strategy="epoch",
             save_strategy="no",
             report_to=[],
         )

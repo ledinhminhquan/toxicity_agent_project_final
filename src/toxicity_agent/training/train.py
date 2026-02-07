@@ -159,7 +159,7 @@ def run_train(config_path: str) -> Tuple[Path, Dict[str, Any]]:
         bf16=bf16,
         gradient_accumulation_steps=int(train_args.get("gradient_accumulation_steps", 1)),
         logging_steps=int(train_args.get("logging_steps", 50)),
-        evaluation_strategy=str(train_args.get("eval_strategy", "steps")),
+        eval_strategy=str(train_args.get("eval_strategy", "steps")),
         eval_steps=int(train_args.get("eval_steps", 200)),
         save_steps=int(train_args.get("save_steps", 200)),
         save_total_limit=int(train_args.get("save_total_limit", 2)),
