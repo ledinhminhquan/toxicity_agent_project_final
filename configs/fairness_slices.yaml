@@ -1,0 +1,52 @@
+# Simple identity mention slices for fairness evaluation.
+# Notes:
+# - These are heuristic keyword lists, NOT demographic inference.
+# - Keep terms "benign" (avoid slurs). Add domain-specific identities if needed.
+groups:
+  gender:
+    - woman
+    - women
+    - man
+    - men
+    - girl
+    - girls
+    - boy
+    - boys
+    - female
+    - male
+  religion:
+    - muslim
+    - christian
+    - jew
+    - jewish
+    - hindu
+    - buddhist
+    - catholic
+    - protestant
+  race_ethnicity:
+    - black
+    - white
+    - asian
+    - latino
+    - latina
+    - hispanic
+    - african
+    - european
+  nationality_immigration:
+    - immigrant
+    - refugee
+    - foreigner
+    - american
+    - chinese
+    - vietnamese
+  lgbtq:
+    - gay
+    - lesbian
+    - bisexual
+    - transgender
+    - queer
+  disability:
+    - disabled
+    - disability
+    - blind
+    - deaf

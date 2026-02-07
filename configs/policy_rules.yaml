@@ -1,0 +1,32 @@
+version: 1
+actions:
+  ALLOW:
+    description: "Content is allowed."
+    user_message: "Thanks for your message."
+  WARN:
+    description: "Content may violate community guidelines. Ask user to rephrase."
+    user_message: "Your message may be interpreted as offensive. Please rephrase to keep the conversation respectful."
+  REVIEW:
+    description: "Uncertain / borderline case. Escalate to human review."
+    user_message: "This message is under review due to potential policy concerns."
+  BLOCK:
+    description: "Block content and provide a neutral guidance message."
+    user_message: "This message violates our community guidelines and cannot be posted."
+
+labels:
+  toxic:
+    display_name: "toxicity"
+  severe_toxic:
+    display_name: "severe toxicity"
+  obscene:
+    display_name: "obscenity"
+  threat:
+    display_name: "threat"
+  insult:
+    display_name: "insult"
+  identity_hate:
+    display_name: "identity-based hate"
+
+explanations:
+  top_k_labels: 3
+  include_scores: true

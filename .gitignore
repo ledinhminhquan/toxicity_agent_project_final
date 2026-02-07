@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+.env.*
+pip-wheel-metadata/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Data & artifacts
+data/raw/
+data/processed/
+models/*
+!models/.gitkeep
+!models/README.md
+runs/
+artifacts/
+*.ckpt
+*.pt
+*.bin
+*.onnx
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+!.env.example
+
+# Egg info
+*.egg-info/
+src/*.egg-info/

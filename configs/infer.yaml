@@ -1,0 +1,28 @@
+paths:
+  model_dir: ''
+  run_dir: ''
+inference:
+  finetuned_subdir: finetuned/latest
+  device: cuda
+  max_length: 256
+  threshold: 0.5
+  batch_size: 64
+detoxify:
+  fast_model_type: unbiased-small
+  multilingual_model_type: multilingual
+agent:
+  borderline_low: 0.35
+  borderline_high: 0.65
+  high_risk_threshold: 0.85
+  action_thresholds:
+    allow_lt: 0.3
+    warn_lt: 0.6
+    block_gte: 0.6
+  prefer_multilingual_when_not_english: true
+privacy:
+  store_raw_text_in_logs: false
+  store_redacted_text_in_logs: false
+logging:
+  enabled: true
+  predictions_log_name: predictions.jsonl
+  human_review_queue_name: human_review_queue.jsonl
