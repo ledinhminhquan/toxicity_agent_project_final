@@ -48,19 +48,30 @@ def _safe_load_dataset(ds_name: str) -> DatasetDict:
     Many HuggingFace datasets that mirror Kaggle competitions have a test split
     whose columns differ from the train split (e.g., test.csv has no label columns).
     The ``datasets`` library raises a ``CastError`` when it tries to unify the
-    Arrow schemas.  When that happens we fall back to loading only the train split
-    and create our own val/test splits later.
+    Arrow schemas — even when ``split="train"`` is specified, because the builder
+    processes *all* CSV files before returning the requested split.
+
+    When that happens we fall back to loading only the ``train.csv`` file via
+    ``data_files``, which tells the builder to ignore other files entirely.
     """
     try:
         return load_dataset(ds_name)
     except Exception as exc:
         logger.warning(
             "load_dataset('%s') failed (%s). "
-            "Falling back to loading only the train split.",
+            "Falling back to loading only train.csv via data_files.",
             ds_name,
             exc.__class__.__name__,
         )
-        return DatasetDict({"train": load_dataset(ds_name, split="train")})
+        # data_files="train.csv" tells the builder to ONLY process train.csv,
+        # completely avoiding the schema mismatch with test.csv.
+        try:
+            ds = load_dataset(ds_name, data_files="train.csv", split="train")
+            return DatasetDict({"train": ds})
+        except Exception:
+            # Last resort: some datasets may use different file names
+            ds = load_dataset(ds_name, data_files={"train": "train.csv"}, split="train")
+            return DatasetDict({"train": ds})
 
 
 def _prepare_split(split: Dataset, text_field: str, label_fields: Sequence[str], id_field: Optional[str]) -> Dataset:
