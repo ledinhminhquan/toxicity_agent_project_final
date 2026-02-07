@@ -49,7 +49,8 @@ class WeightedMultilabelTrainer(Trainer):
         if pos_weight is not None:
             self._pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        # **kwargs absorbs extra args like num_items_in_batch (Transformers >= 4.46)
         labels = inputs.get("labels")
         outputs = model(**{k: v for k, v in inputs.items() if k != "labels"})
         logits = outputs.logits
