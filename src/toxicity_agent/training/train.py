@@ -127,9 +127,12 @@ def run_train(config_path: str) -> Tuple[Path, Dict[str, Any]]:
     train_args = cfg["training"]
 
     # Gradient checkpointing (helps with large models / long sequences)
+    # use_reentrant=False is required for custom compute_loss on PyTorch >= 2.1
     if bool(train_args.get("gradient_checkpointing", False)):
         try:
-            model.gradient_checkpointing_enable()
+            model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={"use_reentrant": False}
+            )
         except Exception:
             logger.warning("Could not enable gradient checkpointing for this model.")
 

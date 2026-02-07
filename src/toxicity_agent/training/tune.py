@@ -114,7 +114,9 @@ def run_tune(config_path: str) -> Dict[str, Any]:
 
         if bool(cfg["training"].get("gradient_checkpointing", False)):
             try:
-                model.gradient_checkpointing_enable()
+                model.gradient_checkpointing_enable(
+                    gradient_checkpointing_kwargs={"use_reentrant": False}
+                )
             except Exception:
                 pass
 
