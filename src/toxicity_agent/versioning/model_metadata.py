@@ -138,7 +138,7 @@ def write_model_metadata(
         n_val=n_val,
         n_test=n_test,
         training_config={
-            # Keep a compact subset (avoid dumping huge objects)
+            "max_length": cfg.get("model", {}).get("max_length"),
             "batch_size": training_cfg.get("batch_size"),
             "eval_batch_size": training_cfg.get("eval_batch_size"),
             "learning_rate": training_cfg.get("learning_rate"),
