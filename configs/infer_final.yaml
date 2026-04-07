@@ -4,9 +4,9 @@ paths:
 inference:
   finetuned_subdir: finetuned/latest
   device: cpu
-  max_length: 256
-  threshold: 0.5
-  batch_size: 64
+  max_length: 512
+  threshold: 0.9
+  batch_size: 16
 detoxify:
   fast_model_type: unbiased-small
   multilingual_model_type: multilingual

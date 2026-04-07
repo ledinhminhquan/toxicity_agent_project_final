@@ -18,4 +18,5 @@ RUN pip install --no-cache-dir -e . --no-deps
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
-CMD ["toxicity-agent", "serve", "--config", "configs/infer.yaml", "--host", "0.0.0.0", "--port", "8000"]
+ENV TOXICITY_INFER_CONFIG=configs/infer_final.yaml
+CMD ["sh", "-c", "toxicity-agent serve --config ${TOXICITY_INFER_CONFIG} --host 0.0.0.0 --port 8000"]

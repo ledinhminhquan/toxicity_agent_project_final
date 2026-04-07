@@ -1,0 +1,73 @@
+project:
+  name: toxicity-agent
+  seed: 42
+paths:
+  data_dir: ''
+  artifacts_dir: ''
+dataset:
+  name: thesofakillers/jigsaw-toxic-comment-classification-challenge
+  text_field: comment_text
+  id_field: id
+  label_fields:
+  - toxic
+  - severe_toxic
+  - obscene
+  - threat
+  - insult
+  - identity_hate
+  negative_downsample_ratio: 1.0
+  max_train_samples: null
+  max_eval_samples: null
+split:
+  train_ratio: 0.9
+  val_ratio: 0.05
+  test_ratio: 0.05
+  seed: 42
+model:
+  hf_model_name: microsoft/deberta-v3-large
+  max_length: 512
+training:
+  batch_size: 8
+  eval_batch_size: 256
+  learning_rate: 8.0e-06
+  weight_decay: 0.005
+  num_train_epochs: 4.0
+  warmup_ratio: 0.1
+  fp16: false
+  gradient_accumulation_steps: 4
+  logging_steps: 100
+  eval_strategy: steps
+  eval_steps: 1117
+  save_steps: 1117
+  save_total_limit: 2
+  metric_for_best_model: f1_micro
+  greater_is_better: true
+  bf16: true
+  gradient_checkpointing: false
+  early_stopping: true
+  early_stopping_patience: 6
+  use_pos_weight: true
+  dataloader_num_workers: 8
+  dataloader_pin_memory: true
+  dataloader_persistent_workers: true
+tuning:
+  enabled: true
+  learning_rates:
+  - 1.0e-05
+  - 2.0e-05
+  - 3.0e-05
+  batch_sizes:
+  - 16
+  - 32
+  num_train_epochs:
+  - 1
+  - 2
+  max_trials: 6
+baselines:
+  tfidf_max_features: 80000
+  tfidf_ngram_range:
+  - 1
+  - 2
+  lr_C: 4.0
+export:
+  onnx: false

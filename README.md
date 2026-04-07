@@ -37,17 +37,17 @@ pip install -e .
 
 ### 2) Train the fine-tuned model
 ```bash
-toxicity-agent train --config configs/train.yaml
+toxicity-agent train --config configs/train_final.yaml
 ```
 
 ### 3) Evaluate baselines and the fine-tuned model
 ```bash
-toxicity-agent eval --config configs/train.yaml
+toxicity-agent eval --config configs/train_final.yaml
 ```
 
 ### 4) Run the API
 ```bash
-toxicity-agent serve --config configs/infer.yaml --host 0.0.0.0 --port 8000
+toxicity-agent serve --config configs/infer_final.yaml --host 0.0.0.0 --port 8000
 ```
 
 Then open:
@@ -63,7 +63,7 @@ curl -X POST "http://localhost:8000/v1/moderate" \
 
 ### 5) Run the agent demo (CLI)
 ```bash
-toxicity-agent demo-agent --config configs/infer.yaml
+toxicity-agent demo-agent --config configs/infer_final.yaml
 ```
 
 ## Training on Google Colab (recommended)
@@ -116,18 +116,20 @@ drive.mount('/content/drive')
 
 4) Train
 ```bash
-!toxicity-agent train --config configs/train.yaml
+!toxicity-agent train --config configs/train_final.yaml
 ```
 
 5) Serve (optional)
 ```bash
-!toxicity-agent serve --config configs/infer.yaml --host 0.0.0.0 --port 8000
+!toxicity-agent serve --config configs/infer_final.yaml --host 0.0.0.0 --port 8000
 ```
 
 ## Configuration
 
-- `configs/train.yaml`: dataset + training hyperparameters
-- `configs/infer.yaml`: inference + agent thresholds + logging
+- `configs/train.yaml`: base training config (DeBERTa-v3-base, 256 tokens)
+- `configs/infer.yaml`: base inference config (threshold 0.5, 256 tokens)
+- `configs/train_final.yaml`: notebook-synced final training config (DeBERTa-v3-large, 512 tokens, lr=8e-6)
+- `configs/infer_final.yaml`: notebook-synced final inference config (threshold 0.9, 512 tokens)
 - `configs/policy_rules.yaml`: action messages and label names
 
 
@@ -138,21 +140,21 @@ These help cover deployment + monitoring requirements:
 
 ### 1) Latency benchmark (p50/p95/p99)
 ```bash
-toxicity-agent benchmark --config configs/infer.yaml --n 300 --warmup 10
+toxicity-agent benchmark --config configs/infer_final.yaml --n 300 --warmup 10
 ```
 Default output:
 - `artifacts/runs/benchmarks/benchmark-<timestamp>.json`
 
 ### 2) Privacy-preserving error analysis (no raw toxic text stored)
 ```bash
-toxicity-agent error-analysis --config configs/train.yaml --split test --threshold 0.5
+toxicity-agent error-analysis --config configs/train_final.yaml --split test --threshold 0.9
 ```
 Default output:
 - `artifacts/runs/error_analysis/error-analysis-<timestamp>.json`
 
 ### 3) Fairness slice evaluation (identity-mention heuristic slices)
 ```bash
-toxicity-agent fairness --config configs/train.yaml --fairness-config configs/fairness_slices.yaml --split test
+toxicity-agent fairness --config configs/train_final.yaml --fairness-config configs/fairness_slices.yaml --split test
 ```
 Default output:
 - `artifacts/runs/fairness/fairness-<timestamp>.json`
@@ -172,6 +174,20 @@ After training, each saved model directory contains:
 ```bash
 pytest -q
 ```
+
+## Cloud Deployment
+
+This project supports cloud deployment via **Hugging Face Spaces** (backend) + **Vercel** (frontend):
+
+- **Backend**: FastAPI model service deployed as a Hugging Face Docker Space
+- **Frontend**: Next.js UI deployed on Vercel
+- **Model weights**: Hosted on Hugging Face Model Hub
+
+Live demo links (if deployed):
+- Backend API: `https://ledinhminhquan-toxicity-agent-api.hf.space`
+- Frontend UI: Vercel deployment URL
+
+See the deployment pack in the repository for detailed setup instructions.
 
 ## License
 MIT (for project code). Dataset licenses follow their respective sources.
@@ -197,8 +213,8 @@ This repo includes an **autopilot pipeline** that runs:
 ### Run (local)
 ```bash
 toxicity-agent autopilot \
-  --train-config configs/train.yaml \
-  --infer-config configs/infer.yaml \
+  --train-config configs/train_final.yaml \
+  --infer-config configs/infer_final.yaml \
   --fairness-config configs/fairness_slices.yaml \
   --title "Hate Speech & Toxicity Detection System" \
   --author "Your Name"
@@ -217,11 +233,11 @@ This is an automated *completeness* check (not a replacement for instructor grad
 
 ### Generate report/slides only (after running train/eval)
 ```bash
-toxicity-agent generate-report --train-config configs/train.yaml --infer-config configs/infer.yaml
-toxicity-agent generate-slides --train-config configs/train.yaml --infer-config configs/infer.yaml
+toxicity-agent generate-report --train-config configs/train_final.yaml --infer-config configs/infer_final.yaml
+toxicity-agent generate-slides --train-config configs/train_final.yaml --infer-config configs/infer_final.yaml
 ```
 
 ### Threshold calibration
 ```bash
-toxicity-agent threshold-search --config configs/train.yaml --split validation
+toxicity-agent threshold-search --config configs/train_final.yaml --split validation
 ```
