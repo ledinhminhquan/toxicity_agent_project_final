@@ -14,6 +14,7 @@ actions:
     user_message: "This message violates our community guidelines and cannot be posted."
 
 labels:
+  # English (Jigsaw 6-label taxonomy)
   toxic:
     display_name: "toxicity"
   severe_toxic:
@@ -26,6 +27,11 @@ labels:
     display_name: "insult"
   identity_hate:
     display_name: "identity-based hate"
+  # Vietnamese sidecar (2-label taxonomy from ViHSD)
+  offensive:
+    display_name: "offensive"
+  hate:
+    display_name: "hate speech"
 
 explanations:
   top_k_labels: 3

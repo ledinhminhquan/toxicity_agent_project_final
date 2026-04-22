@@ -129,8 +129,27 @@ drive.mount('/content/drive')
 - `configs/train.yaml`: base training config (DeBERTa-v3-base, 256 tokens)
 - `configs/infer.yaml`: base inference config (threshold 0.5, 256 tokens)
 - `configs/train_final.yaml`: notebook-synced final training config (DeBERTa-v3-large, 512 tokens, lr=8e-6)
-- `configs/infer_final.yaml`: notebook-synced final inference config (threshold 0.9, 512 tokens)
-- `configs/policy_rules.yaml`: action messages and label names
+- `configs/infer_final.yaml`: notebook-synced final inference config (threshold 0.9, 512 tokens) — **English-only**
+- `configs/train_vi.yaml`: **Vietnamese sidecar** training config (XLM-R base, 256 tokens, ViHSD dataset)
+- `configs/infer_multilingual_extension.yaml`: **English + Vietnamese** inference config (adds `lang == vi` route)
+- `configs/policy_rules.yaml`: action messages and label names (English 6-label + Vietnamese 2-label)
+
+
+## Vietnamese extension (sidecar, additive-only)
+
+The project also ships an optional Vietnamese path that is fully backward-compatible with the English pipeline. When enabled:
+
+- English traffic still goes through DeBERTa-v3-large + Detoxify exactly as before.
+- Vietnamese traffic (`lang == "vi"`) is routed to a dedicated fine-tuned `XLM-RoBERTa-base` model, with a 2-label taxonomy (`offensive`, `hate`) derived from the ViHSD dataset.
+- The API contract (`/health`, `/v1/moderate`) is unchanged; `label_scores` is a dynamic dict, so Vietnamese responses simply contain `{"offensive": ..., "hate": ...}`.
+
+To enable it, train a VI sidecar model (see the `v13` Colab notebook), save its weights under `models/vi_finetuned/latest/`, and serve the backend with the multilingual extension config:
+
+```bash
+toxicity-agent serve --config configs/infer_multilingual_extension.yaml --host 0.0.0.0 --port 8000
+```
+
+If the VI folder is missing, the backend silently keeps the original English behaviour — nothing breaks.
 
 
 

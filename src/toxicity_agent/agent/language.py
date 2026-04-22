@@ -23,3 +23,12 @@ class LanguageDetector:
 
 def is_english(lang: str) -> bool:
     return lang.lower().startswith("en")
+
+
+def is_vietnamese(lang: str) -> bool:
+    """Return True if the detected language is Vietnamese.
+
+    ``langdetect`` returns ``"vi"`` for Vietnamese. We use ``startswith`` to be
+    defensive against locale-style codes (e.g. ``"vi-VN"``).
+    """
+    return (lang or "").lower().startswith("vi")

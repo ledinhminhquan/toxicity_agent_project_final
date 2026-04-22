@@ -1,0 +1,65 @@
+project:
+  name: toxicity-agent-vi
+  seed: 42
+paths:
+  data_dir: ''
+  artifacts_dir: ''
+dataset:
+  name: visolex/ViHSD
+  adapter: vihsd_sidecar
+  text_field: text
+  id_field: id
+  label_fields:
+    - offensive
+    - hate
+  # ViHSD has 3 classes (CLEAN / OFFENSIVE / HATE) mapped into 2 multi-label
+  # columns. See `src/toxicity_agent/data/vi_hsd_adapter.py` for the exact
+  # mapping. Do NOT mix this dataset with the Jigsaw 6-label pipeline.
+  negative_downsample_ratio: 1.0
+  max_train_samples: null
+  max_eval_samples: null
+split:
+  # ViHSD already ships a train/validation/test split via the `type` field.
+  # These ratios are only used as a fallback if the field is missing.
+  train_ratio: 0.80
+  val_ratio: 0.10
+  test_ratio: 0.10
+  seed: 42
+model:
+  hf_model_name: FacebookAI/xlm-roberta-base
+  max_length: 256
+training:
+  batch_size: 32
+  eval_batch_size: 128
+  learning_rate: 2.0e-05
+  weight_decay: 0.01
+  num_train_epochs: 4
+  warmup_ratio: 0.06
+  fp16: false
+  bf16: true
+  gradient_accumulation_steps: 2
+  logging_steps: 50
+  eval_strategy: epoch
+  save_strategy: epoch
+  save_total_limit: 2
+  metric_for_best_model: f1_macro
+  greater_is_better: true
+  gradient_checkpointing: false
+  early_stopping: true
+  early_stopping_patience: 3
+  use_pos_weight: true
+tuning:
+  enabled: true
+  learning_rates:
+    - 1.0e-05
+    - 2.0e-05
+    - 3.0e-05
+  batch_sizes:
+    - 16
+    - 32
+  num_train_epochs:
+    - 2
+    - 3
+  max_trials: 6
+export:
+  onnx: false

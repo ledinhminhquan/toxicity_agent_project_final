@@ -1,0 +1,40 @@
+paths:
+  model_dir: ''
+  run_dir: ''
+inference:
+  # English path (unchanged from infer_final.yaml)
+  finetuned_subdir: finetuned/latest
+  device: cpu
+  max_length: 512
+  threshold: 0.9
+  batch_size: 16
+  # Vietnamese sidecar path (additive). If the folder is absent, the backend
+  # falls back to Detoxify multilingual for Vietnamese inputs, exactly like
+  # infer_final.yaml did.
+  vi_finetuned_subdir: vi_finetuned/latest
+  vi_max_length: 256
+  vi_threshold: 0.5
+detoxify:
+  fast_model_type: unbiased-small
+  multilingual_model_type: multilingual
+agent:
+  borderline_low: 0.35
+  borderline_high: 0.65
+  high_risk_threshold: 0.85
+  action_thresholds:
+    allow_lt: 0.3
+    warn_lt: 0.6
+    block_gte: 0.6
+  prefer_multilingual_when_not_english: true
+  # NEW: languages that always require a second-pass call to a dedicated
+  # model. Vietnamese is forced so short Vietnamese inputs (e.g. "Bạn tệ
+  # quá") are never silently routed to the English fast model only.
+  force_second_pass_languages:
+    - vi
+privacy:
+  store_raw_text_in_logs: false
+  store_redacted_text_in_logs: false
+logging:
+  enabled: true
+  predictions_log_name: predictions.jsonl
+  human_review_queue_name: human_review_queue.jsonl

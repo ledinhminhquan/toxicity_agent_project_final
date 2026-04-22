@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from ..utils import redact_pii, sha256_text
 from ..models.model_registry import Predictors
 from .actions import Action, ModerationDecision
 from .human_review_queue import HumanReviewQueue
-from .language import LanguageDetector, is_english
+from .language import LanguageDetector, is_english, is_vietnamese
 from .policy_store import PolicyStore
 
 
@@ -22,6 +22,21 @@ class ModerationAgent:
     review_queue: Optional[HumanReviewQueue]
     cfg: Dict
 
+    # --------- Small helpers (kept as methods to stay testable) ---------
+    def _vi_enabled(self) -> bool:
+        """True when the VI sidecar predictor is loaded."""
+        return getattr(self.predictors, "vi_finetuned", None) is not None
+
+    def _force_second_pass_languages(self) -> List[str]:
+        """Languages that always require a second-pass model (agent config)."""
+        raw = (self.cfg.get("agent", {}) or {}).get("force_second_pass_languages", []) or []
+        return [str(x).lower() for x in raw]
+
+    def _vi_threshold(self) -> float:
+        """Threshold used for policy decisions when the VI model is in charge."""
+        return float((self.cfg.get("inference", {}) or {}).get("vi_threshold", 0.5))
+
+    # --------- Main entry ---------
     def moderate(self, text: str) -> ModerationDecision:
         raw_text = text or ""
         lang = self.lang_detector.detect(raw_text)
@@ -49,12 +64,30 @@ class ModerationAgent:
         final_overall = fast_overall
 
         prefer_multi = bool(agent_cfg.get("prefer_multilingual_when_not_english", True))
+        force_second_langs = self._force_second_pass_languages()
 
-        need_second_pass = borderline or high_risk or (lang == "unknown")
+        # Language-based FORCE second pass (e.g. VI must always be routed to its
+        # dedicated model, regardless of what the English fast model scored).
+        forced_by_language = (lang or "").lower() in {l.lower() for l in force_second_langs}
 
-        if need_second_pass:
+        need_second_pass = borderline or high_risk or (lang == "unknown") or forced_by_language
+
+        # --- Additive Vietnamese sidecar route ---
+        # If detected language is Vietnamese AND a VI predictor is loaded,
+        # always use the VI model as the authoritative scorer.
+        if is_vietnamese(lang) and self._vi_enabled():
+            vi_labels = list(self.predictors.vi_label_fields)
+            vi_probs = self.predictors.vi_finetuned.predict_proba_matrix(
+                [raw_text],
+                label_order=vi_labels,
+            )[0]
+            final_scores = {lf: float(vi_probs[i]) for i, lf in enumerate(vi_labels)}
+            final_overall = float(np.max(vi_probs))
+            model_used = f"vi_finetuned:{self.predictors.vi_finetuned.model_dir.name}"
+
+        elif need_second_pass:
             if (not is_english(lang)) and prefer_multi:
-                # Use multilingual model for non-English
+                # Use multilingual Detoxify for non-English, non-VI languages
                 multi_probs = self.predictors.detoxify_multilingual.predict_proba_matrix(
                     [raw_text],
                     label_order=self.predictors.label_fields,
@@ -64,7 +97,7 @@ class ModerationAgent:
                 final_overall = float(np.max(multi_probs))
                 model_used = f"detoxify:{self.predictors.detoxify_multilingual.model_type}"
             elif is_english(lang) and self.predictors.finetuned is not None:
-                # Use fine-tuned model for English when available
+                # Use fine-tuned English model when available
                 hf_probs = self.predictors.finetuned.predict_proba_matrix(
                     [raw_text],
                     label_order=self.predictors.label_fields,
